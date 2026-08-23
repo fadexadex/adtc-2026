@@ -10,11 +10,10 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODEL_DIR="$HERE/model"
-MODEL_FILE="$MODEL_DIR/SmolLM2-135M-Instruct-Q4_K_M.gguf"
+MODEL_FILE="$MODEL_DIR/MEDLLM_V1_SFT_2.0-Q4_K_M.gguf"
 
-# ── Replace this URL with your public model weight URL ─────────────────────────
-MODEL_URL="https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/main/SmolLM2-135M-Instruct-Q4_K_M.gguf"
-# ───────────────────────────────────────────────────────────────────────────────
+# Public Hugging Face GGUF — Laptopllm/MEDLLM_V1_SFT_2.0_GGUF (Qwen3.5-4B, Q4_K_M, ~2.7 GB)
+MODEL_URL="https://huggingface.co/Laptopllm/MEDLLM_V1_SFT_2.0_GGUF/resolve/main/MEDLLM_V1_SFT_2.0-Q4_K_M.gguf"
 
 mkdir -p "$MODEL_DIR"
 
@@ -23,7 +22,7 @@ if [[ -f "$MODEL_FILE" ]]; then
   exit 0
 fi
 
-echo "downloading $MODEL_URL → $MODEL_FILE (~80 MB)…"
+echo "downloading $MODEL_URL → $MODEL_FILE (~2.7 GB)…"
 
 if command -v curl > /dev/null 2>&1; then
   curl -L --fail --progress-bar -o "$MODEL_FILE.partial" "$MODEL_URL"
@@ -36,3 +35,9 @@ fi
 
 mv "$MODEL_FILE.partial" "$MODEL_FILE"
 echo "done: $MODEL_FILE"
+# Verify GGUF magic (optional sanity check)
+if command -v head > /dev/null 2>&1; then
+  if ! head -c 4 "$MODEL_FILE" | grep -q "GGUF"; then
+    echo "warning: downloaded file does not appear to be GGUF (magic mismatch)" >&2
+  fi
+fi
