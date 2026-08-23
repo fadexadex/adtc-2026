@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Continued pre-training data mix</title>
+  <desc id="desc">Horizontal bars show Global medical 54.6 percent, General replay 20 percent, African medical 15.3 percent, Reasoning replay 10 percent, Patient education 0.06 percent, and Safety and triage 0.01 percent.</desc>
+  <rect width="1200" height="650" fill="#ffffff"/>
+  <text x="48" y="58" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#172033">Continued pre-training data mix</text>
+  <text x="48" y="88" font-family="Arial, sans-serif" font-size="17" fill="#526174">717.0M tokens across 587,054 records</text>
+  <g font-family="Arial, sans-serif" font-size="17" fill="#172033">
+    <text x="48" y="158">Global medical</text>
+    <text x="48" y="233">General replay</text>
+    <text x="48" y="308">African medical</text>
+    <text x="48" y="383">Reasoning replay</text>
+    <text x="48" y="458">Patient education</text>
+    <text x="48" y="533">Safety and triage</text>
+  </g>
+  <g>
+    <rect x="245" y="128" width="710" height="42" rx="3" fill="#0f766e"/>
+    <rect x="245" y="203" width="260" height="42" rx="3" fill="#64748b"/>
+    <rect x="245" y="278" width="199" height="42" rx="3" fill="#16a34a"/>
+    <rect x="245" y="353" width="130" height="42" rx="3" fill="#7c3aed"/>
+    <rect x="245" y="428" width="4" height="42" rx="2" fill="#d97706"/>
+    <rect x="245" y="503" width="4" height="42" rx="2" fill="#dc2626"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#172033">
+    <text x="970" y="156">54.6% · 391.5M</text>
+    <text x="520" y="231">20.0% · 143.4M</text>
+    <text x="459" y="306">15.3% · 109.9M</text>
+    <text x="390" y="381">10.0% · 71.7M</text>
+    <text x="265" y="456">0.06% · 0.47M</text>
+    <text x="265" y="531">0.01% · 0.09M</text>
+  </g>
+  <line x1="245" y1="577" x2="1025" y2="577" stroke="#cbd5e1" stroke-width="2"/>
+  <g font-family="Arial, sans-serif" font-size="14" fill="#64748b" text-anchor="middle">
+    <text x="245" y="605">0%</text><text x="505" y="605">20%</text><text x="765" y="605">40%</text><text x="1025" y="605">60%</text>
+  </g>
+</svg>
