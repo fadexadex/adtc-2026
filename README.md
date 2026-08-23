@@ -42,40 +42,40 @@ Fill in every field. No field should remain at its placeholder value.
 
 ```json
 {
-  "team_id": "your-team-id",
-  "domain": "coding_assistants",
+  "team_id": "Med-Assist",
+  "domain": "healthcare_medical",
   "language_scope": ["en"],
-  "african_alpha_claim": false,
+  "african_alpha_claim": true,
   "budget_laptop_claim": true,
   "submitter": {
-    "name": "your-name",
-    "email": "your-email@domain.com",
-    "github_handle": "your-github"
+    "name": "Arinde David Shina-Ayomi",
+    "email": "arindedavid91@gmail.com",
+    "github_handle": "david-shina"
   },
   "cross_disciplinary_pairing": {
     "discipline": "education",
     "load_bearing": true,
-    "description": "Brief description of how your model serves a real-world domain."
+    "description": "Medical education and frontline triage support — offline LLM providing differential reasoning, red-flag triage levels and patient-education rationales for low-resource clinics without lab/imaging."
   },
   "test_prompts": [
     {
       "prompt_id": "tp_001",
-      "prompt": "Your first test prompt, written for your chosen domain."
+      "prompt": "You are a medical board examiner. A 52-year-old male presents with sudden-onset severe \"thunderclap\" headache, worst at its peak on exertion, with transient loss of consciousness. CT head is normal. What is the most appropriate next investigation?\n\nA. Cerebral MRI\nB. Lumbar puncture with opening pressure measurement\nC. Carotid Doppler ultrasound\nD. Electroencephalogram (EEG)"
     },
     {
       "prompt_id": "tp_002",
-      "prompt": "Your second test prompt, written for your chosen domain."
+      "prompt": "What is the first-line treatment for anaphylaxis in adults?"
     }
   ],
   "model": {
-    "name": "YourModel-Q4_K_M",
+    "name": "MEDLLM_V1_SFT_2.0-Q4_K_M",
     "runtime": "llama.cpp",
     "quantization": "GGUF Q4_K_M",
-    "parameters_estimate": "1.1B",
+    "parameters_estimate": "4B",
     "packaging": "binary_bundle"
   },
   "_runtime": {
-    "model_path": "model/your-model.gguf"
+    "model_path": "model/MEDLLM_V1_SFT_2.0-Q4_K_M.gguf"
   }
 }
 ```
