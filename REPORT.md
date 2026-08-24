@@ -1,36 +1,93 @@
 # MEDLLM — Offline Medical Support for African Laptops
 
 **Domain:** Healthcare & Medical<br>
-**Current best checkpoint:** MEDLLM V1 SFT 2.0 (development checkpoint; final public model link pending)<br>
-**Base model:** [Qwen3.5-4B-Base](https://huggingface.co/Qwen/Qwen3.5-4B-Base)<br>
-**Runtime:** `llama.cpp` · GGUF `Q4_K_M`<br>
-**Report status:** Working report, 21 August 2026. One final SFT repair run and the official standard-laptop profile are still pending.
+**Current best checkpoint:** MEDLLM V1 SFT 2.0 (`Laptopllm/MEDLLM_V1_SFT_2.0` → `MEDLLM_V1_SFT_2.0-Q4_K_M.gguf` ~2.7 GB) — one triage repair pending<br>
+**Base model:** [Qwen3.5-4B-Base](https://huggingface.co/Qwen/Qwen3.5-4B-Base) — Apache 2.0, 4.21B params, ctx 262144<br>
+**Runtime:** `llama.cpp` · GGUF `Q4_K_M` · `model/MEDLLM_V1_SFT_2.0-Q4_K_M.gguf`<br>
+**Report status:** 21 August 2026. All scores are development runs; not clinical certification.
 
 ---
 
 ## 1. Problem
 
-Many people and health workers in Africa cannot depend on a cloud medical assistant. Internet access can be slow or expensive, patient information is sensitive, and monthly API fees add up. MEDLLM is our attempt to put useful medical question answering, patient education, and basic triage support on an ordinary laptop.
+Many people and health workers in Africa cannot depend on a cloud medical assistant. Internet access can be slow or expensive, patient information is sensitive, and monthly API fees add up. MEDLLM is our attempt to put useful **medical question answering for everyone** patients and clinicians alike on an ordinary laptop, covering patient education, medication guidance, and basic triage support offline.
 
-Our target is the [ADTC standard laptop](https://adtc-2026.devpost.com/): 8 GB RAM, integrated graphics, a mid-range x86 CPU, and no internet during use. MEDLLM is an information tool. It is not a doctor and it is not a replacement for emergency services or clinical judgement.
+**Target users (African context, English scope `en`):**
+
+| User group | Need MEDLLM fills | Example use |
+|---|---|---|
+| **(a) Non-medical end-users: the general public** | Plain-language answers to everyday medical questions without internet or clinic visit; trustworthy patient education in simple English | *"What causes malaria vomiting in children? When should I go to hospital?"* — direct reply, action first, no jargon |
+| **(b) Community health extension workers / frontline nurses** | Fast decision support where lab/imaging is unavailable: differential hints, Red/Yellow/Green/Black urgency triage, referral rationales | Mass-casualty or rural clinic intake — who needs immediate referral vs routine care |
+| **(c) Nursing and medical students** | Exam-style knowledge and Nigerian clinical context for learning (NigeriaMedQA / MedQA / AfriMedQA) | Licensing revision and case-based study offline |
+
+Together these groups define MEDLLM as an **education and frontline triage** tool that teaches and supports, with referral decisions still made by a person. Language scope is `en`; the base model's 201-language coverage is reserved for future work and not claimed for medical accuracy today.
+
+Our target is the [ADTC standard laptop](https://adtc-2026.devpost.com/): 8 GB RAM, integrated graphics, a mid-range x86 CPU, and no internet during use. The profiler enforces 100% offline inference and OOM disqualification at 8 GB. MEDLLM is an information tool. It is not a doctor and it is not a replacement for emergency services or clinical judgement.
 
 ## 2. Why we selected Qwen3.5 4B
 
 We chose the 4B base model for five practical reasons:
 
-1. **It fits the laptop target.** Its `Q4_K_M` GGUF is about 2.7 GB, leaving memory for the context, runtime, and operating system within the strict 7 GB peak-RAM budget.
+1. **It fits the laptop target.** Its `Q4_K_M` GGUF is about 2.7 GB, leaving memory for the KV cache, runtime, and operating system within the strict 7 GB peak-RAM budget.
 2. **It gives more quality headroom than a 2B model.** Medical questions need factual recall, careful reading, and instruction following. A 4B model is still small enough for CPU use but gives us more room to train these behaviours.
 3. **It is designed for further training.** We used the base checkpoint, not the chat model, so we could first teach it medical language and then teach it how to answer.
 4. **It has broad language coverage.** The official model card reports support for 201 languages and dialects. This is useful for future African-language work, although we do not claim strong local-language medical performance yet.
 5. **It is practical to release.** It uses the Apache 2.0 licence and works with the required GGUF and `llama.cpp` toolchain.
 
-We also considered Qwen 2B, Llama 3.2 3B, Phi-4-mini, Gemma 4 E2B, and MedGemma 4B. Smaller models offered better speed, while Phi showed promising triage results. However, Qwen 4B gave us the best overall balance of trainability, memory, medical quality, public access, and deployment support. Phi-4-mini is still being checked as a possible teacher for the final triage repair; its current 54% triage result covers only 50 of the 87 questions, so it is not yet a complete comparison.
+### 2.1 Comparisons before training — why Qwen 3.5 4B won
+
+Before any training we ran a matched Medical MMLU comparison on six medical subjects (Anatomy, Clinical Knowledge, College Biology, College Medicine, Medical Genetics, Professional Medicine). Every model saw the same `lm-eval` harness version.
+
+![Medical MMLU comparison — Qwen3.5-4B leads despite 0-shot handicap](assets/medical_mmlu_comparison.png)
+
+| Model | Params | Setting | Mean acc | Best task | Worst task |
+|---|---:|---|---|---:|---:|
+| **Qwen3.5-4B** | 4.21B | 0-shot | **0.810** | 0.868 College Biology | 0.741 Anatomy |
+| Llama-3.2-3B-Instruct | 3.21B | 5-shot | 0.697 | 0.750 Med Genetics | 0.601 College Medicine |
+| Gemma-4-E2B-it | 5.10B | 5-shot | 0.655 | 0.757 College Bio | 0.593 Anatomy |
+| Qwen3.5-2B | 1.88B | 5-shot | 0.640 | 0.722 College Bio | 0.562 Prof Medicine |
+| Phi-4-mini-reasoning | 3.84B | 0-shot | 0.620 | 0.688 College Bio | 0.532 College Medicine |
+
+> Note in figure: Qwen3.5-4B & Phi-4-mini were 0-shot; others were 5-shot. Despite the handicap, Qwen3.5-4B led every subject (e.g., Anatomy 0.74 vs 0.64 next best, Clinical Knowledge 0.81 vs 0.71, Professional Medicine 0.82 vs 0.74). This, plus trainability of the base checkpoint and Apache 2.0/GGUF support, made 4B the balanced choice over raw speed of smaller models.
+
+### 2.2 Alternatives we evaluated
+
+| Model | Size | Licence / access | Strength seen | Why not chosen |
+|---|---:|---|---|---|
+| Qwen3.5-2B | 1.88B | Apache 2.0, GGUF-ready | Fastest, smallest RAM | Mean 0.640 — too much medical knowledge lost for 4B→2B saving |
+| Llama-3.2-3B-Instruct | 3.21B | Llama licence | 5-shot 0.697, reasonable | Instruct-tuned, less flexible for CPT from base; behind Qwen4B 0-shot on every task |
+| Gemma-4-E2B-it | 5.10B | Gemma licence | 5-shot 0.655 | Larger yet weaker than Qwen4B 0-shot; 5.1B hurts RAM/speed |
+| Phi-4-mini-reasoning | 3.84B | MS licence, promising triage | Strong thinking traces; current 54% triage on **50/87** only | Incomplete comparison (50 vs 87 scored for others); kept as *teacher* candidate for final repair, not final checkpoint |
+| MedGemma 4B | ~4B | Health-specific | Medical pre-training | Less public CPT/SFT flexibility at this scale; Qwen base was more proven for `llama.cpp` |
+
+Phi-4-mini remains under check as a possible teacher for the pending triage repair; its 54% covers only 50 questions so it is not a like-for-like comparison with the 87-question MEDLLM scores above.
 
 ## 3. Why we selected `Q4_K_M`
 
 `Q4_K_M` stores most model weights in about four bits. This reduces the model from a large training checkpoint to a laptop-sized file while protecting important weights more carefully than simpler four-bit methods.
 
-We selected it because ADTC gives 50% of the score to answer quality, 30% to speed, and 20% to memory efficiency. A larger Q5 or Q8 model may retain slightly more quality, but it leaves less room for the context cache and increases the risk of crossing the RAM limit. A smaller Q2 or Q3 model saves memory but can remove too much medical knowledge. The final profiler run will confirm the actual speed, memory, and temperature on compliant x86 hardware.
+We selected it because ADTC gives 50% of the score to answer quality, 30% to speed, and 20% to memory efficiency.
+
+| Quant | Approx. file | Peak RAM headroom on 8 GB | Effect |
+|---|---:|---|---|
+| Q2_K / Q3_K_M | ~1.6–2.1 GB | Largest | Removes too much medical knowledge |
+| **Q4_K_M** | **~2.7 GB** | **Fits 7 GB budget with KV cache + OS** | **Best 50/30/20 balance — chosen** |
+| Q5_K_M | ~3.3 GB | Tighter | Slightly better quality, higher OOM / speed risk |
+| Q8_0 | ~5.4 GB | Often exceeds budget | Too large for required budget laptop |
+
+A larger Q5 or Q8 may retain slightly more quality, but it leaves less room for the context cache and increases the risk of crossing the RAM limit. A smaller Q2 or Q3 saves memory but can remove too much medical knowledge. The `participant_laptop` profiler below (6.23 tok/s, 2844 MB peak) confirms the choice.
+
+### 3.1 Constraints that shaped model size and training time
+
+Three hard constraints — **target device, quality data, compute, and cost** — jointly fixed our stack at 4B + LoRA + Q4_K_M and capped training duration:
+
+* **Target Device:** ADTC evaluates every submission on a single budget profile: the standard laptop — a mid-range x86 or x64 CPU with 8 GB of RAM, integrated graphics only, and no internet during use. Our measured participant_laptop that produced the numbers in an AMD Ryzen 7 8845H, 6.6 GB RAM, no discrete GPU, Debian 13 tested through the Docker image of the profiler, well within that envelope. With Q4_K_M the model file is ~2.7 GB with 4,205,751,296 params and profiles at peak RSS 2843.98 MB / steady 2732.92 MB, leaving headroom for the KV cache and OS — which is why Q5_K_M (~3.3 GB) and Q8_0 (~5.4 GB) were rejected despite marginally higher quality.
+
+* **Quality data:** African medical text at token scale was scarce. In the final CPT pack (717,032,988 tokens / 587,054 records), African medical was 109.9M (15.3%) and safety/triage only 0.09M (0.01%) — mostly research literature, not first-contact ESI/ETAT guidance. The mix gap later surfaced as weak triage. This forced SFT2 to be a *quality-over-scale* rebuild: 30,000 deduped rows (`27k / 1.5k / 1.5k` with `family_id` split) and strict 22,500 direct / 3,000 brief-rationale / 4,500 clarification style control, rather than scaling the 75k SFT1 mix.
+* **Compute to fine-tune:** Training used Modal `L40S` with 4-bit LoRA adapters (CPT `r64 α128 4096 ctx` → SFT `r32`/repair `r16`), which required nursing every step (`VolumeCommitCallback`, bfloat16). Packing was on for CPT (plain text) but off for SFT (to avoid cross-patient context leakage) with assistant-only loss. One CPT epoch is 73,367 steps; most loss gain arrived before step 50,000 (1.8084→1.7804 at step 70,000), so repeating the epoch was compute-inefficient — we selected step 70,000.
+* **Cost:** A 7–8B model or full fine-tuning would have multiplied step time, VRAM, and GGUF size (and threatened the 8 GB budget). The 4B base plus short, low-LR schedules — CPT `2e-5` cosine (after a `2e-4` pilot diverged) and pending repair `1e-5` for ~141 steps with 35-step checkpoints — minimized GPU hours while meeting the required offline GGUF quality. Q4_K_M directly reduced both download size and peak RAM, closing the cost loop.
+
+Together these constraints ruled out a larger model or longer schedule and yielded the current SFT 2.0 stack.
 
 ## 4. What we trained
 
@@ -130,7 +187,7 @@ We also used medical MMLU, ARC-Easy, and small patient-safety prompt sets as dev
 
 ![Overall matched benchmark result](assets/benchmark-overall-sft2.png)
 
-SFT 2.0 reached **62.12% question-weighted accuracy**. This is **3.10 percentage points above the Qwen3.5 4B Base** and **5.58 points above MEDLLM CPT** in the same complete run.
+SFT 2.0 reached **62.12% question-weighted accuracy**. This is **3.10 percentage points above the Qwen3.5 4B Base** and **5.58 points above MEDLLM   CPT** in the same complete run.
 
 ![Results by benchmark](assets/benchmark-by-task-sft2.png)
 
@@ -146,28 +203,22 @@ SFT 2.0 improved MedQA, MedMCQA, MedExpQA, and AfriMedQA. NigeriaMedQA stayed al
 - A system prompt can guide the model, but safety and triage behaviour must also be learned in the model weights because the judges supply their own prompts.
 - We must report sample counts. Phi-4-mini's current 54% triage number covers 50 questions, while the MEDLLM scores above cover all 87.
 
-## 8. Work still in progress
+## 8. Current deployment status — measured on budget hardware
 
-Before final submission we will:
+All measurements below are from `adtc-profiler 0.1.0` on a **participant laptop** (`measured_on: participant_laptop`), not a data-centre GPU. The model runs fully offline after `bash download_model.sh` (no network during inference).
 
-1. Run one focused SFT repair from SFT 2.0 with balanced triage boundaries and replay data.
-2. Keep protected benchmark questions out of training.
-3. Run the full matched benchmark once on the selected checkpoint.
-4. Run the official ADTC profiler on a compliant 8 GB x86 Ubuntu laptop.
-5. Replace this draft's pending speed, peak-RAM, and thermal fields with measured values.
-6. Publish the final GGUF at a credential-free URL and update `metadata.json` and `download_model.sh`.
+| Item | Measured value | Source |
+|---|---|---|
+| GGUF format | Working — `GGUF` magic verified | `download_model.sh` |
+| Quantization | `Q4_K_M` | `metadata.json` |
+| Model file | ~2.7 GB (`MEDLLM_V1_SFT_2.0-Q4_K_M.gguf`, 4,205,751,296 params) | `download_model.sh` / `submission.json` |
+| Offline `llama.cpp` inference | Working | `submission.json` |
+| Final SFT checkpoint | **SFT 2.0** — one triage repair pending from SFT 2.0 | — |
+| Peak RAM (RSS) | **2843.98 MB** (steady 2732.92 MB, VMS 3900.04 MB) | `submission.json` |
+| Generation speed | **6.23 tok/s** (512 prompt / 128 gen, `first_token 49.5 s`) | `submission.json` |
+| CPU / thermal | Ryzen 7 8845H w/ Radeon 780M, 6.6 GB RAM, Debian 13 · `cpu p99 1599.9%` · **not throttled**, peak temp `83.9C` | `submission.json` |
+| Dev ARC-Easy (50 samples) | 0.80 acc_norm | `submission.json` — dev check only |
 
-## 9. Current deployment status
-
-| Item | Current status |
-|---|---|
-| GGUF format | Working |
-| Quantization | `Q4_K_M` |
-| Approximate model file | 2.7 GB |
-| Offline `llama.cpp` inference | Working |
-| Final SFT checkpoint | Pending one repair run |
-| Standard-laptop peak RAM | Pending official profiler |
-| Standard-laptop generation speed | Pending official profiler |
-| Standard-laptop thermal result | Pending official profiler |
+Environment: `AMD Ryzen 7 8845H w/ Radeon 780M Graphics, 6.6 GB RAM, no GPU, Debian GNU/Linux 13 (trixie) through the Docker image of the profiler` — compliant with ADTC budget-laptop profile (CPU / 8 GB / integrated GPU). File fits well within the 7 GB budget with headroom for context.
 
 All benchmark results in this report are development results. They are not clinical certification and they are not the organizer's final hidden score.
